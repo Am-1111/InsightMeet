@@ -1,0 +1,11 @@
+streamlit
+torch
+torchaudio
+transformers
+sentence-transformers
+openai-whisper
+pydub
+ffmpeg-python
+reportlab
+spacy
+python-dotenv
