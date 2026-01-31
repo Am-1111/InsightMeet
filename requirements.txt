@@ -1,0 +1,11 @@
+streamlit
+ffmpeg-python
+openai-whisper
+torch
+transformers
+sentence-transformers
+spacy
+pandas
+numpy
+sqlite-utils
+fpdf
