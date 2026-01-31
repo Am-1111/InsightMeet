@@ -49,8 +49,8 @@ if uploaded_file:
         st.success("Analysis completed")
 
         # ---------- TABS ----------
-        tab1, tab2, tab3, tab4 = st.tabs(
-            ["📄 Transcript", "🗣️ Speakers", "📝 Summary", "✅ Action Items"]
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(
+            ["📄 Transcript", "🗣️ Speakers", "📝 Summary", "✅ Action Items", "⚡ Impact Points"]
         )
 
         with tab1:
@@ -81,3 +81,12 @@ if uploaded_file:
                     st.checkbox(item)
             else:
                 st.info("No clear action items detected")
+        
+        
+
+with tab5:
+    for item in output["impact_points"]:
+        st.markdown(
+            f"**Score {item['score']}** — {item['sentence']}"
+        )
+

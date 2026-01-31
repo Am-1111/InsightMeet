@@ -1,23 +1,38 @@
-from transformers import pipeline
+from transformers import BartTokenizer, BartForConditionalGeneration
+import torch
 
-_summarizer = pipeline(
-    task="text2text-generation",
-    model="facebook/bart-large-cnn"
+# Load once (cached)
+_TOKENIZER = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+_MODEL = BartForConditionalGeneration.from_pretrained(
+    "facebook/bart-large-cnn"
 )
 
-def summarize_text(text: str) -> str:
+def summarize_text(text: str, max_length: int = 130, min_length: int = 40) -> str:
     """
-    STEP 4: Abstractive summarization using BART
+    STEP: Text Summarization using BART (architecture-faithful)
+    Python 3.13 safe, no pipeline dependency
     """
 
-    if len(text.strip()) < 50:
+    if not text or len(text.strip()) < 50:
         return "Transcript too short to summarize."
 
-    result = _summarizer(
+    inputs = _TOKENIZER(
         text,
-        max_length=130,
-        min_length=40,
-        do_sample=False
+        return_tensors="pt",
+        truncation=True,
+        max_length=1024
     )
 
-    return result[0]["generated_text"]
+    summary_ids = _MODEL.generate(
+        inputs["input_ids"],
+        max_length=max_length,
+        min_length=min_length,
+        length_penalty=2.0,
+        num_beams=4,
+        early_stopping=True
+    )
+
+    return _TOKENIZER.decode(
+        summary_ids[0],
+        skip_special_tokens=True
+    )
