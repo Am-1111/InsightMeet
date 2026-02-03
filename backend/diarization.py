@@ -1,21 +1,25 @@
 def diarize_transcript(segments):
     """
-    STEP: Speaker Diarization (heuristic-based, Python 3.13 safe)
-
-    Input: Whisper segments
-    Output: Speaker-labeled transcript
+    Simple speaker diarization based on time gaps.
+    Output: [{speaker, text}]
     """
 
-    diarized_text = []
-    current_speaker = 1
+    diarized = []
+    speaker_id = 1
+    last_end = 0.0
 
-    for i, seg in enumerate(segments):
-        # Simple speaker switch heuristic
-        if i > 0 and seg["start"] - segments[i-1]["end"] > 1.0:
-            current_speaker += 1
+    for seg in segments:
+        start = seg["start"]
 
-        diarized_text.append(
-            f"Speaker {current_speaker}: {seg['text'].strip()}"
-        )
+        # New speaker if long pause
+        if start - last_end > 1.5:
+            speaker_id += 1
 
-    return "\n".join(diarized_text)
+        diarized.append({
+            "speaker": f"Speaker {speaker_id}",
+            "text": seg["text"].strip()
+        })
+
+        last_end = seg["end"]
+
+    return diarized

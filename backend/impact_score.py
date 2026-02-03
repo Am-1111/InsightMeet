@@ -1,63 +1,48 @@
-import re
-from collections import Counter
+from sentence_transformers import SentenceTransformer, util
+import numpy as np
 
-ACTION_KEYWORDS = [
-    "will", "need to", "should", "assign",
-    "prepare", "complete", "follow up"
-]
-
-DECISION_KEYWORDS = [
-    "decided", "final", "approved", "confirmed"
-]
-
-URGENCY_KEYWORDS = [
-    "today", "tomorrow", "deadline", "asap", "urgent"
-]
+# Load once (cached)
+_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def sentence_split(text: str) -> list[str]:
-    return re.split(r'(?<=[.!?]) +', text)
-
-
-def impact_score(sentence: str, freq_counter: Counter) -> float:
-    score = 0.0
-    s = sentence.lower()
-
-    # Action signals
-    score += sum(1 for w in ACTION_KEYWORDS if w in s) * 2.5
-
-    # Decision signals
-    score += sum(1 for w in DECISION_KEYWORDS if w in s) * 3.0
-
-    # Urgency
-    score += sum(1 for w in URGENCY_KEYWORDS if w in s) * 2.0
-
-    # Length importance
-    score += min(len(sentence.split()) / 20, 1.5)
-
-    # Repetition importance
-    score += freq_counter[s] * 0.5
-
-    return round(score, 2)
-
-
-def run_impact_score(transcript: str, top_k: int = 5) -> list[dict]:
+def extract_impact_points(text: str, top_k: int = 5):
     """
-    IMPACTScore™ – Custom importance ranking model
+    Custom IMPACTScore™
+    Extracts the most important sentences from transcript
     """
 
-    sentences = sentence_split(transcript)
-    freq_counter = Counter(s.lower() for s in sentences)
-
-    scored = [
-        {
-            "sentence": s,
-            "score": impact_score(s, freq_counter)
-        }
-        for s in sentences
-        if len(s.strip()) > 10
+    # Split transcript into sentences
+    sentences = [
+        s.strip()
+        for s in text.split(".")
+        if len(s.strip()) > 20
     ]
 
-    scored.sort(key=lambda x: x["score"], reverse=True)
+    if not sentences:
+        return []
 
-    return scored[:top_k]
+    # Encode sentences
+    embeddings = _MODEL.encode(sentences)
+
+    # Compute centroid
+    centroid = np.mean(embeddings, axis=0)
+
+    # Similarity with centroid
+    scores = util.cos_sim(centroid, embeddings)[0]
+
+    # Rank sentences
+    ranked = sorted(
+        zip(sentences, scores),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    # Top-k results
+    results = []
+    for sent, score in ranked[:top_k]:
+        results.append({
+            "sentence": sent,
+            "score": round(float(score), 3)
+        })
+
+    return results

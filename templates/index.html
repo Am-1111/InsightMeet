@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>InsightMeet</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🎙️ InsightMeet</h1>
+    <p class="subtitle">AI-powered Meeting Intelligence</p>
+
+    <form action="/process" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">🚀 Process Meeting</button>
+    </form>
+
+    {% if summary %}
+    <div class="card">
+        <h3>📝 Summary</h3>
+        <p>{{ summary }}</p>
+    </div>
+
+    <div class="card">
+        <h3>🔁 Meeting Recap</h3>
+        <pre>{{ recap }}</pre>
+    </div>
+
+    <div class="card">
+        <h3>⭐ Key Insights</h3>
+        <ul>
+            {% for item in impact %}
+            <li><b>{{ item.score }}</b> — {{ item.sentence }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h3>📄 Transcript</h3>
+        <textarea rows="10">{{ transcript }}</textarea>
+    </div>
+
+    <a href="/download" class="download-btn">⬇️ Download MOM PDF</a>
+    {% endif %}
+</div>
+
+</body>
+</html>

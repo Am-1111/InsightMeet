@@ -1,27 +1,50 @@
 from backend.audio_processing import preprocess_audio
-from backend.transcription import transcribe_with_segments
-from backend.diarization import diarize_transcript
+from backend.transcription import transcribe_audio
 from backend.summarization import summarize_text
-from backend.action_items import extract_action_items
-from backend.impact_score import run_impact_score
+from backend.impact_score import extract_impact_points
+from backend.recap_engine import generate_recap
+from backend.database import save_meeting, fetch_previous_summaries
+from backend.diarization import diarize_transcript
+
+
+
 
 def run_pipeline(audio_path: str) -> dict:
-    cleaned_audio = preprocess_audio(
-        audio_path,
-        "data/uploads/cleaned_meeting.wav"
-    )
+    """
+    End-to-end meeting processing pipeline
+    """
 
-    transcript, segments = transcribe_with_segments(cleaned_audio)
-    diarized = diarize_transcript(segments)
+    # 1️⃣ Preprocess audio
+    cleaned_path = audio_path.replace(".mp3", "_cleaned.wav")
+    preprocess_audio(audio_path, cleaned_path)
+
+    # 2️⃣ Transcription
+    transcript, segments = transcribe_audio(cleaned_path)
+
+    # 3️⃣ Summarization
     summary = summarize_text(transcript)
-    actions = extract_action_items(transcript)
-    impact_points = run_impact_score(transcript)
+
+    # 4️⃣ Fetch previous meetings
+    previous = fetch_previous_summaries(limit=5)
+
+    # 5️⃣ Generate recap
+    recap = generate_recap(previous, summary)
+
+    # 6️⃣ Impact points
+    impact_points = extract_impact_points(transcript)
+
+    # 7️⃣ Save meeting
+    save_meeting(
+        title="Project Meeting",
+        transcript=transcript,
+        summary=summary
+    )
+    
 
     return {
         "transcript": transcript,
-        "diarized_transcript": diarized,
         "summary": summary,
-        "action_items": actions,
-        "impact_points": impact_points
-
+        "recap": recap,
+        "impact_points": impact_points,
+        "segments": segments
     }
