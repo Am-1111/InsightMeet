@@ -1,6 +1,7 @@
 import whisper
 
-_MODEL = whisper.load_model("small")
+_MODEL = whisper.load_model("base")   
+
 
 def transcribe_with_segments(audio_path):
     result = _MODEL.transcribe(
