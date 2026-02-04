@@ -1,48 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>InsightMeet</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <title>InsightMeet</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="container">
-    <h1>🎙️ InsightMeet</h1>
-    <p class="subtitle">AI-powered Meeting Intelligence</p>
+<div class="app">
+  <h1>🎙 InsightMeet</h1>
+  <p class="subtitle">AI-powered Meeting Intelligence</p>
 
-    <form action="/process" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <button type="submit">🚀 Process Meeting</button>
-    </form>
+  <input type="file" id="audioFile">
+  <button onclick="startProcess()">🚀 Process Meeting</button>
 
-    {% if summary %}
-    <div class="card">
-        <h3>📝 Summary</h3>
-        <p>{{ summary }}</p>
-    </div>
-
-    <div class="card">
-        <h3>🔁 Meeting Recap</h3>
-        <pre>{{ recap }}</pre>
-    </div>
-
-    <div class="card">
-        <h3>⭐ Key Insights</h3>
-        <ul>
-            {% for item in impact %}
-            <li><b>{{ item.score }}</b> — {{ item.sentence }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div class="card">
-        <h3>📄 Transcript</h3>
-        <textarea rows="10">{{ transcript }}</textarea>
-    </div>
-
-    <a href="/download" class="download-btn">⬇️ Download MOM PDF</a>
-    {% endif %}
+  <div class="status-box">
+    Status: <span id="statusText">Idle</span>
+  </div>
 </div>
+
+<script>
+async function startProcess() {
+  const fileInput = document.getElementById("audioFile");
+  if (!fileInput.files.length) {
+    alert("Please select an audio file");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  document.getElementById("statusText").innerText = "Uploading...";
+
+  fetch("/process", {
+    method: "POST",
+    body: formData
+  });
+
+  const interval = setInterval(async () => {
+    const res = await fetch("/status");
+    const data = await res.json();
+    document.getElementById("statusText").innerText = data.message;
+
+    if (data.message === "Done") {
+      clearInterval(interval);
+    }
+  }, 1000);
+}
+</script>
 
 </body>
 </html>

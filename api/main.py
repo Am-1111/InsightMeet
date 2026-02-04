@@ -38,37 +38,24 @@ def home(request: Request):
     )
 
 # ---------------- PROCESS MEETING ----------------
-@app.post("/process", response_class=HTMLResponse)
-async def process_meeting(request: Request, file: UploadFile = File(...)):
-    audio_path = os.path.join(UPLOAD_DIR, file.filename)
+PROCESS_STATUS = {"message": "Idle"}
+
+@app.post("/process")
+async def process_meeting(file: UploadFile = File(...)):
+    audio_path = f"data/uploads/{file.filename}"
 
     with open(audio_path, "wb") as f:
         f.write(await file.read())
 
-    # Run full ML pipeline
-    result = run_pipeline(audio_path)
+    def status_updater(msg):
+        PROCESS_STATUS["message"] = msg
 
-    # Generate MOM PDF
-    generate_mom_pdf(
-        output_path=os.path.join(MOM_DIR, "meeting_mom.pdf"),
-        meeting_title="Project Meeting",
-        transcript=result["transcript"],
-        summary=result["summary"],
-        action_items=[],
-        impact_points=result["impact_points"]
-    )
+    result = run_pipeline(audio_path, status_callback=status_updater)
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "summary": result["summary"],
-            "recap": result["recap"],
-            "transcript": result["transcript"],
-            "impact": result["impact_points"],
-            "pdf_ready": True
-        }
-    )
+    PROCESS_STATUS["message"] = "Done"
+
+    return result
+
 
 # ---------------- DOWNLOAD PDF ----------------
 @app.get("/download")
@@ -101,5 +88,10 @@ def logout():
     response = RedirectResponse("/login", status_code=302)
     response.delete_cookie("user")
     return response
+
+@app.get("/status")
+def get_status():
+    return PROCESS_STATUS
+
 
 
